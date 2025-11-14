@@ -1,210 +1,142 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Eraser } from "lucide-react";
+import { Brain, Eraser } from "lucide-react";
 
-export default function DigitRecognition({ setOutput }) {
-    const canvasRef = useRef(null);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [predictions, setPredictions] = useState([]);
-    const [isProcessing, setIsProcessing] = useState(false);
+export default function DigitRecognition({ onNext }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-    // Initialize canvas
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (canvas) {
-            const ctx = canvas.getContext("2d");
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-        }
-    }, []);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
 
-    // Utility to get proper canvas coords
-    const getCanvasCoordinates = (e) => {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
+    // Start with black canvas
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
 
-        return {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY,
-        };
-    };
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext("2d");
 
-    const startDrawing = (e) => {
-        const ctx = canvasRef.current.getContext("2d");
-        const { x, y } = getCanvasCoordinates(e);
-        setIsDrawing(true);
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    };
+    setIsDrawing(true);
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
 
-    const draw = (e) => {
-        if (!isDrawing) return;
-        const ctx = canvasRef.current.getContext("2d");
-        const { x, y } = getCanvasCoordinates(e);
+  const draw = (e) => {
+    if (!isDrawing) return;
 
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 20;
-        ctx.lineTo(x, y);
-        ctx.stroke();
-    };
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext("2d");
 
-    const stopDrawing = () => {
-        if (isDrawing) {
-            setIsDrawing(false);
-            recognizeDigit();
-        }
-    };
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 20;
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
 
-    // Fake neural network prediction
-    const recognizeDigit = async () => {
-        setIsProcessing(true);
+  const stopDrawing = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      recognizeDigit();
+    }
+  };
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
+  const weightedRandomDigit = () => {
+    const weights = [1, 1, 1, 1, 1, 1, 1, 3, 1, 1];
+    // index = digit, value = weight
+    // 7 has weight 3 → 3x more likely
 
-        const grayscale = [];
-        for (let i = 0; i < data.length; i += 4) {
-            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            grayscale.push(avg / 255);
-        }
+    const total = weights.reduce((a, b) => a + b, 0);
+    const r = Math.random() * total;
 
-        await new Promise((r) => setTimeout(r, 300));
+    let sum = 0;
+    for (let i = 0; i < weights.length; i++) {
+      sum += weights[i];
+      if (r < sum) return i;
+    }
+  };
 
-        const randomDigit = Math.floor(Math.random() * 10);
-        const preds = Array.from({ length: 10 }, (_, i) => ({
-            digit: i,
-            confidence:
-                i === randomDigit
-                    ? 0.75 + Math.random() * 0.24
-                    : Math.random() * 0.15,
-        })).sort((a, b) => b.confidence - a.confidence);
+  const recognizeDigit = async () => {
+    setIsProcessing(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
-        setPredictions(preds);
-        setIsProcessing(false);
+    const fakeDigit = weightedRandomDigit();
+    setPrediction(fakeDigit);
 
-        if (setOutput) {
-            setOutput({
-                digit: preds[0].digit,
-                confidence: preds[0].confidence,
-                allPredictions: preds,
-            });
-        }
-    };
+    setIsProcessing(false);
+  };
 
-    const clearCanvas = () => {
-        const ctx = canvasRef.current.getContext("2d");
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setPredictions([]);
-        if (setOutput) setOutput(null);
-    };
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
 
-    return (
-        <div
-            style={{
-                background: "rgba(255,255,255,0.06)",
-                padding: "20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.15)",
-                width: "100%",
-                boxSizing: "border-box"
-            }}
-        >
-            <h2 style={{ color: "white", marginBottom: "8px" }}>Draw a Digit</h2>
-            <p style={{ color: "#ccc", marginBottom: "12px" }}>
-                Draw the number <strong>7</strong> to pass this step.
-            </p>
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            {predictions.length > 0 && (
-                <div
-                    style={{
-                        background: "rgba(34,197,94,0.15)",
-                        border: "1px solid rgba(34,197,94,0.35)",
-                        padding: "12px",
-                        borderRadius: "8px",
-                        marginBottom: "16px",
-                        textAlign: "center",
-                    }}
-                >
-                    <p style={{ color: "#ccc", margin: 0 }}>Prediction:</p>
-                    <p
-                        style={{
-                            color: "white",
-                            fontSize: "48px",
-                            margin: "4px 0",
-                        }}
-                    >
-                        {predictions[0].digit}
-                    </p>
-                    <p style={{ color: "#4ade80", margin: 0 }}>
-                        {(predictions[0].confidence * 100).toFixed(1)}%
-                    </p>
-                </div>
-            )}
+    setPrediction(null);
+  };
 
-            {/* Canvas */}
-            <div style={{ position: "relative" }}>
-                <canvas
-                    ref={canvasRef}
-                    width={400}
-                    height={400}
-                    style={{
-                        width: "100%",
-                        borderRadius: "8px",
-                        border: "3px solid rgba(255,255,255,0.25)",
-                        display: "block",
-                        cursor: "crosshair",
-                    }}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                />
+  return (
+    <div>
+      <h2>Step: Draw the Number 7</h2>
+      <p>We need to confirm you're human by having you draw the number 7.</p>
 
-                {isProcessing && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            background: "rgba(0,0,0,0.4)",
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: "20px",
-                        }}
-                    >
-                        Recognizing...
-                    </div>
-                )}
-            </div>
+      <div style={{ marginBottom: "15px" }}>
+        <canvas
+          ref={canvasRef}
+          width={300}
+          height={300}
+          style={{
+            border: "3px solid #ccc",
+            borderRadius: "10px",
+            cursor: "crosshair",
+            width: "100%",
+            background: "black",
+          }}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+        />
+      </div>
 
-            <button
-                onClick={clearCanvas}
-                style={{
-                    width: "100%",
-                    marginTop: "14px",
-                    padding: "12px",
-                    background: "#dc2626",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                }}
-            >
-                <Eraser size={18} /> Clear
-            </button>
-        </div>
-    );
+      {isProcessing && (
+        <p style={{ fontStyle: "italic" }}>Recognizing your masterpiece…</p>
+      )}
+
+      {prediction !== null && !isProcessing && (
+        <p>
+          AI thinks you drew:{" "}
+          <strong style={{ fontSize: "1.4rem" }}>{prediction}</strong>
+        </p>
+      )}
+
+      <button
+        onClick={clearCanvas}
+        style={{
+          width: "100%",
+          background: "#ff5d5d",
+          marginTop: "10px",
+        }}
+      >
+        <Eraser size={18} style={{ marginRight: "6px" }} />
+        Clear Canvas
+      </button>
+
+      <button
+        onClick={onNext}
+        disabled={prediction !== 7}
+        style={{ width: "100%", marginTop: "15px" }}
+      >
+        Continue
+      </button>
+    </div>
+  );
 }
