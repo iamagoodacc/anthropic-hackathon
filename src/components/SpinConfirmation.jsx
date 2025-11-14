@@ -7,8 +7,7 @@ export default function SpinConfirmation({ onNext }) {
     <div>
       <h2>Step 4: Spin in a Circle</h2>
       <p>
-        Please stand up, spin in a full circle, then check the box below to
-        **confirm you definitely did it**.
+        Please stand up, spin in a full circle, then check the box below to confirm you definitely did it.
       </p>
 
       <label style={{ display: "flex", alignItems: "center", marginTop: "10px" }}>
