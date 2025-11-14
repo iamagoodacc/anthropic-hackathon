@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import UsernameStep from "./components/UsernameStep";
 import PasswordStep from "./components/PasswordStep";
 import CaptchaStep from "./components/CaptchaStep";
-import DigitRecognition from "./components/DigitRecognition";
+//import DigitRecognition from "./components/DigitRecognition";
+import VibeAlignmentStep from "./components/VibeAlignmentStep";
 import SpinConfirmation from "./components/SpinConfirmation";
+import CheckboxAvalancheStep from "./components/CheckboxAvalancheStep";
 import FinalScreen from "./components/FinalScreen";
 import "./index.css";
 
@@ -16,8 +18,10 @@ export default function App() {
     <UsernameStep onNext={next} />,
     <PasswordStep onNext={next} />,
     <CaptchaStep onNext={next} />,
-    <DigitRecognition onNext={next} />,  // ← NEW STEP
+    //<DigitRecognition onNext={next} />,  // ← NEW STEP
     <SpinConfirmation onNext={next} />,
+    <CheckboxAvalancheStep onNext={next} />,
+    <VibeAlignmentStep onNext={next} />,
     <FinalScreen />
   ];
 
