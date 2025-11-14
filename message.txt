@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Brain, Eraser } from 'lucide-react';
 
-export default function DigitRecognition() {
+export default function DigitRecognition({ output, setOutput }) {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [predictions, setPredictions] = useState([]);
@@ -18,26 +18,38 @@ export default function DigitRecognition() {
         }
     }, []);
 
-    const startDrawing = (e) => {
+    const getCanvasCoordinates = (e) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    };
+
+    const startDrawing = (e) => {
+        const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
+        const coords = getCanvasCoordinates(e);
 
         setIsDrawing(true);
         ctx.beginPath();
-        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.moveTo(coords.x, coords.y);
     };
 
     const draw = (e) => {
         if (!isDrawing) return;
 
         const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
         const ctx = canvas.getContext('2d');
+        const coords = getCanvasCoordinates(e);
 
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 20;
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.lineTo(coords.x, coords.y);
         ctx.stroke();
     };
 
@@ -66,7 +78,6 @@ export default function DigitRecognition() {
         }
 
         // Simulate neural network predictions with realistic probabilities
-        // In a real implementation, this would call your trained model
         await new Promise(resolve => setTimeout(resolve, 300));
 
         // Generate pseudo-random but realistic predictions
@@ -81,6 +92,15 @@ export default function DigitRecognition() {
 
         setPredictions(preds);
         setIsProcessing(false);
+
+        // Set output to the best prediction
+        if (setOutput) {
+            setOutput({
+                digit: preds[0].digit,
+                confidence: preds[0].confidence,
+                allPredictions: preds
+            });
+        }
     };
 
     const clearCanvas = () => {
@@ -89,88 +109,164 @@ export default function DigitRecognition() {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         setPredictions([]);
+
+        // Clear output as well
+        if (setOutput) {
+            setOutput(null);
+        }
     };
 
-    const getBarColor = (index) => {
-        const colors = [
-            'bg-blue-500',
-            'bg-green-500',
-            'bg-yellow-500',
-            'bg-orange-500',
-            'bg-red-500',
-            'bg-purple-500',
-            'bg-pink-500',
-            'bg-indigo-500',
-            'bg-teal-500',
-            'bg-cyan-500'
-        ];
-        return colors[index % colors.length];
+    const styles = {
+        container: {
+            minHeight: '100vh',
+            background: 'linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)',
+            padding: '32px'
+        },
+        maxWidth: {
+            maxWidth: '1152px',
+            margin: '0 auto'
+        },
+        grid: {
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            gap: '32px'
+        },
+        card: {
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        },
+        heading: {
+            fontSize: '20px',
+            fontWeight: '600',
+            color: 'white',
+            marginBottom: '8px'
+        },
+        description: {
+            color: '#d1d5db',
+            fontSize: '14px'
+        },
+        resultBox: {
+            marginTop: '24px',
+            padding: '16px',
+            background: 'rgba(34, 197, 94, 0.2)',
+            border: '1px solid rgba(34, 197, 94, 0.5)',
+            borderRadius: '8px',
+            textAlign: 'center'
+        },
+        resultLabel: {
+            color: '#d1d5db',
+            fontSize: '14px',
+            marginBottom: '4px'
+        },
+        resultDigit: {
+            fontSize: '64px',
+            fontWeight: 'bold',
+            color: 'white'
+        },
+        resultConfidence: {
+            color: '#4ade80',
+            fontSize: '18px',
+            fontWeight: '600',
+            marginTop: '8px'
+        },
+        canvasContainer: {
+            position: 'relative'
+        },
+        canvas: {
+            border: '4px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            cursor: 'crosshair',
+            width: '100%',
+            display: 'block'
+        },
+        overlay: {
+            position: 'absolute',
+            inset: '0',
+            background: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        },
+        overlayText: {
+            color: 'white',
+            fontSize: '18px',
+            fontWeight: '600'
+        },
+        button: {
+            marginTop: '16px',
+            width: '100%',
+            background: '#ef4444',
+            color: 'white',
+            fontWeight: '600',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+        },
+        buttonHover: {
+            background: '#dc2626'
+        }
     };
+
+    const [isHovered, setIsHovered] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                        <Brain className="w-10 h-10" />
-                        Digit Recognition
-                    </h1>
-                    <p className="text-gray-300">Draw a digit (0-9) and watch the AI recognize it</p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* Drawing Canvas */}
-                    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl">
-
-                        <div className="mb-4">
-                            <h2 className="text-xl font-semibold text-white mb-2">Draw Here</h2>
-                            <p className="text-gray-300 text-sm">Use your mouse to draw a digit</p>
+        <div style={styles.container}>
+            <div style={styles.maxWidth}>
+                <div style={styles.grid}>
+                    <div style={styles.card}>
+                        <div style={{ marginBottom: '16px' }}>
+                            <h2 style={styles.heading}>Draw Here</h2>
+                            <p style={styles.description}>Use your mouse to draw a digit</p>
                         </div>
 
                         {predictions.length > 0 && (
-                            <div className="mt-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-                                <div className="text-center">
-                                    <p className="text-gray-300 text-sm mb-1">Best Match</p>
-                                    <p className="text-6xl font-bold text-white">{predictions[0].digit}</p>
-                                    <p className="text-green-400 text-lg font-semibold mt-2">
-                                        {(predictions[0].confidence * 100).toFixed(1)}% confidence
-                                    </p>
-                                </div>
+                            <div style={styles.resultBox}>
+                                <p style={styles.resultLabel}>Best Match</p>
+                                <p style={styles.resultDigit}>{predictions[0].digit}</p>
+                                <p style={styles.resultConfidence}>
+                                    {(predictions[0].confidence * 100).toFixed(1)}% confidence
+                                </p>
                             </div>
                         )}
 
-
-                        <div className="relative">
+                        <div style={styles.canvasContainer}>
                             <canvas
                                 ref={canvasRef}
                                 width={400}
                                 height={400}
-                                className="border-4 border-white/20 rounded-xl cursor-crosshair w-full"
+                                style={styles.canvas}
                                 onMouseDown={startDrawing}
                                 onMouseMove={draw}
                                 onMouseUp={stopDrawing}
                                 onMouseLeave={stopDrawing}
                             />
                             {isProcessing && (
-                                <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
-                                    <div className="text-white text-lg font-semibold">Recognizing...</div>
+                                <div style={styles.overlay}>
+                                    <div style={styles.overlayText}>Recognizing...</div>
                                 </div>
                             )}
                         </div>
 
                         <button
                             onClick={clearCanvas}
-                            className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            style={isHovered ? { ...styles.button, ...styles.buttonHover } : styles.button}
+                            onMouseEnter={() => setIsHovered(true)}
+                            onMouseLeave={() => setIsHovered(false)}
                         >
-                            <Eraser className="w-5 h-5" />
+                            <Eraser style={{ width: '20px', height: '20px' }} />
                             Clear Canvas
                         </button>
                     </div>
-
-                </div>
-
-                <div className="mt-8 text-center text-gray-400 text-sm">
-                    <p>💡 Note: This is a demo with simulated predictions. Connect a real ML model for actual digit recognition!</p>
                 </div>
             </div>
         </div>

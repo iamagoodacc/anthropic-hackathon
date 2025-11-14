@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import UsernameStep from "./components/UsernameStep";
 import PasswordStep from "./components/PasswordStep";
 import CaptchaStep from "./components/CaptchaStep";
+import DigitRecognition from "./components/DigitRecognition";
 import SpinConfirmation from "./components/SpinConfirmation";
 import FinalScreen from "./components/FinalScreen";
 import "./index.css";
